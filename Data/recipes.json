@@ -10,7 +10,10 @@
       "60g soy sauce",
       "10g garlic",
       "5g ginger"
-    ]
+    ],
+    "TotalNutrition": null,
+    "PerServingNutrition": null,
+    "IngredientMatches": null
   },
   {
     "Title": "Veggie Omelette",
@@ -23,7 +26,10 @@
       "15g olive oil",
       "150g small corn tortillas",
       "3g Salt and pepper (to taste)"
-    ]
+    ],
+    "TotalNutrition": null,
+    "PerServingNutrition": null,
+    "IngredientMatches": null
   },
   {
     "Title": "Overnight Oats",
@@ -34,6 +40,9 @@
       "70g chia seeds",
       "60g honey",
       "300g blueberries"
-    ]
+    ],
+    "TotalNutrition": null,
+    "PerServingNutrition": null,
+    "IngredientMatches": null
   }
 ]
