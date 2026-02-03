@@ -2,7 +2,7 @@
 
 namespace RecipeApp.Services;
 
-public class RecipeService
+public class RecipeService : IRecipeService
 {
     private readonly List<Recipe> _recipes = new();
 
@@ -59,5 +59,5 @@ public class RecipeService
     public List<Recipe> GetAllRecipes() => _recipes;
 
     public Recipe? GetRecipeByTitle(string title) =>
-        _recipes.FirstOrDefault(r => r.Title == title);
+    _recipes.FirstOrDefault(r => r.Title.Equals(title, StringComparison.OrdinalIgnoreCase));
 }

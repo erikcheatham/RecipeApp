@@ -18,7 +18,7 @@ else
         @foreach (var recipe in RecipeService.GetAllRecipes())
         {
             <li>
-                <NavLink href="@($"/recipedetail?title={Uri.EscapeDataString(recipe.Title)}")">
+                <NavLink href="@($"/recipedetail?title={Uri.EscapeDataString(recipe.Title)}&source=inmemory")">
                     @recipe.Title (serves @recipe.Yield)
                 </NavLink>
             </li>

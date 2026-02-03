@@ -20,7 +20,7 @@ else
         @foreach (var recipe in RecipesFromJSONService.GetAllRecipes())
         {
             <li>
-                <NavLink href="@($"/recipedetail?title={Uri.EscapeDataString(recipe.Title)}")">
+                <NavLink href="@($"/recipedetail?title={Uri.EscapeDataString(recipe.Title)}&source=json")">
                     @recipe.Title (serves @recipe.Yield)
                 </NavLink>
             </li>
@@ -28,4 +28,4 @@ else
     </ul>
 }
 
-<NavLink href="/recipesfromjson">← Back to Home</NavLink>
+<NavLink href="/">← Back to Home</NavLink>

@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace RecipeApp.Services;
 
-public class RecipesFromJSONService
+public class RecipesFromJSONService : IRecipeService
 {
     private readonly List<Recipe> _recipes = new();
 
