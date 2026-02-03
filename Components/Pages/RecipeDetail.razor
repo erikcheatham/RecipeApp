@@ -1,4 +1,6 @@
 ﻿@page "/recipedetail"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using Microsoft.AspNetCore.Components.Web
 @using System
 @using RecipeApp.Models
 @using RecipeApp.Services
@@ -57,7 +59,7 @@ else
                      href="@($"/editrecipe?title={Uri.EscapeDataString(CurrentRecipe.Title)}&source={effectiveSource}")">
                 Edit Recipe
             </NavLink>
-            <button class="btn btn-outline-danger" @onclick="DeleteRecipe">Delete Recipe</button>
+            <button type="button" class="btn btn-outline-danger" @onclick="DeleteRecipe">Delete Recipe</button>
         </div>
     }
 
@@ -97,6 +99,8 @@ else
 
     private void DeleteRecipe()
     {
+        if (CurrentRecipe == null) return;
+
         var effectiveSource = Source ?? "inmemory";
         IRecipeService selectedService = effectiveSource switch
         {
