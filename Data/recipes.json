@@ -35,5 +35,12 @@
       "60g honey",
       "300g blueberries"
     ]
+  },
+  {
+    "Title": "Pizza",
+    "Yield": 4,
+    "Ingredients": [
+      "Cheese"
+    ]
   }
 ]
