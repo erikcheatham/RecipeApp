@@ -1,0 +1,23 @@
+
+
+Given:
+o The starter recipe webapp you wrote (see above) 
+o Some USDA macros data: https://faculty-web.msoe.edu/yoder/macro.csv
+ 
+Goal: Estimate the nutritional quantity of the macronutrients in whatever recipe is selected/input from the UI.
+
+first thoughts: avoid leading and trailing spaces, remove unwanted matches, case insensitive also quotation marks, 
+	doubles for the decimals looks like last three items in each record, maybe use regex to only get characters or numbers including decimals,
+	do i need to ask about deduping
+
+	Define standards of nutritional values per serving size - standard american diet 2k calories or what to influence the serving size calculation?
+		- maybe have a default serving size but allow user to adjust it
+		- maybe have a default number of servings but allow user to adjust it
+
+token ranked matching : vEGGIE oMELETE
+ingredient lists of my user entered receipes may match entire recipes or may match ingredients
+
+//does entire recipe match
+if (Title.Contains(description))
+if (Ingredients.Foreach(x => x.Contains(description))
+if ()

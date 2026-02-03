@@ -132,4 +132,26 @@ static async Task SaveRecipesAsync(List<Recipe> recipes, IWebHostEnvironment env
     await File.WriteAllTextAsync(path, json);
 }
 
+//app.MapGet("/api/recipes", async (IWebHostEnvironment env) =>
+//{
+//    var path = Path.Combine(env.ContentRootPath, "Data", "recipes.json");
+
+//    if (!File.Exists(path))
+//    {
+//        return Results.NotFound();
+//    }
+
+//    var json = await File.ReadAllTextAsync(path);
+//    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+//    var loaded = JsonSerializer.Deserialize<List<Recipe>>(json, options) ?? new();
+
+//    var response = new RecipeListResponse
+//    {
+//        Recipes = loaded,
+//        TotalCount = loaded.Count
+//    };
+
+//    return Results.Json(response);
+//});
+
 app.Run();
