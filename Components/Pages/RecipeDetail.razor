@@ -5,6 +5,7 @@
 @inject RecipeService InMemoryService
 @inject RecipesFromJSONService JsonService
 @inject RecipesFromWebService WebService
+@inject NavigationManager Navigation
 
 <PageTitle>@(CurrentRecipe?.Title ?? "Recipe Details")</PageTitle>
 
@@ -17,6 +18,7 @@
 else
 {
     var effectiveSource = Source ?? "inmemory";
+
     IRecipeService selectedService = effectiveSource switch
     {
         "json" => JsonService,
@@ -49,6 +51,14 @@ else
                 <li>@ingredient</li>
             }
         </ul>
+
+        <div class="mt-3">
+            <NavLink class="btn btn-outline-primary me-2"
+                     href="@($"/editrecipe?title={Uri.EscapeDataString(CurrentRecipe.Title)}&source={effectiveSource}")">
+                Edit Recipe
+            </NavLink>
+            <button class="btn btn-outline-danger" @onclick="DeleteRecipe">Delete Recipe</button>
+        </div>
     }
 
     var backHref = effectiveSource == "json" ? "/recipesfromjson" :
@@ -57,7 +67,7 @@ else
     var backText = effectiveSource == "json" ? "Recipes from JSON" :
                    effectiveSource == "web" ? "Recipes from Web API" : "Available Recipes";
 
-    <NavLink href="@backHref">← Back to @backText</NavLink>
+    <NavLink class="d-block mt-3" href="@backHref">← Back to @backText</NavLink>
 }
 
 @code {
@@ -83,5 +93,23 @@ else
 
             CurrentRecipe = selectedService.GetRecipeByTitle(RecipeTitle);
         }
+    }
+
+    private void DeleteRecipe()
+    {
+        var effectiveSource = Source ?? "inmemory";
+        IRecipeService selectedService = effectiveSource switch
+        {
+            "json" => JsonService,
+            "web" => WebService,
+            _ => InMemoryService
+        };
+
+        selectedService.DeleteRecipe(RecipeTitle);
+
+        var backHref = effectiveSource == "json" ? "/recipesfromjson" :
+                       effectiveSource == "web" ? "/recipefromwebjson" : "/";
+
+        Navigation.NavigateTo(backHref);
     }
 }

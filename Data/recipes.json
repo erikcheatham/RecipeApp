@@ -1,8 +1,8 @@
 [
   {
-    "title": "Chicken Stir-Fry",
-    "yield": 2,
-    "ingredients": [
+    "Title": "Chicken Stir-Fry",
+    "Yield": 2,
+    "Ingredients": [
       "30g olive oil",
       "200g chicken breast",
       "500g broccoli florets",
@@ -13,9 +13,9 @@
     ]
   },
   {
-    "title": "Veggie Omelette",
-    "yield": 1,
-    "ingredients": [
+    "Title": "Veggie Omelette",
+    "Yield": 1,
+    "Ingredients": [
       "100g large eggs",
       "40g diced onion",
       "50g diced tomato",
@@ -26,9 +26,9 @@
     ]
   },
   {
-    "title": "Overnight Oats",
-    "yield": 4,
-    "ingredients": [
+    "Title": "Overnight Oats",
+    "Yield": 4,
+    "Ingredients": [
       "160g rolled oats",
       "1000g almond milk",
       "70g chia seeds",
