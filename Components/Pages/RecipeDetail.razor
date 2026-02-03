@@ -1,9 +1,11 @@
 ﻿@page "/recipedetail"
 @using System
+@using System.Text.Json
 @using RecipeApp.Models
 @using RecipeApp.Services
 @inject RecipeService InMemoryService
 @inject RecipesFromJSONService JsonService
+@inject HttpClient Http
 
 <PageTitle>@(CurrentRecipe?.Title ?? "Recipe Details")</PageTitle>
 
@@ -13,35 +15,39 @@
 {
     <p><em>No recipe selected.</em></p>
 }
+else if (IsLoading)
+{
+    <p><em>Loading recipe...</em></p>
+}
+else if (CurrentRecipe == null)
+{
+    <p><em>Recipe "@RecipeTitle" not found in the @SourceDisplay data source.</em></p>
+}
 else
 {
-    var effectiveSource = Source ?? "inmemory";
-    IRecipeService selectedService = effectiveSource == "json" ? JsonService : InMemoryService;
-    var sourceDisplay = effectiveSource == "json" ? "JSON file" : "in-memory";
+    <p><em>Loaded from @SourceDisplay data.</em></p>
 
-    if (CurrentRecipe == null)
-    {
-        <p><em>Recipe "@RecipeTitle" not found in the @sourceDisplay data source.</em></p>
-    }
-    else
-    {
-        <p><em>Loaded from @sourceDisplay data.</em></p>
+    <h2>@CurrentRecipe.Title</h2>
+    <p><strong>Serves:</strong> @CurrentRecipe.Yield</p>
 
-        <h2>@CurrentRecipe.Title</h2>
-        <p><strong>Serves:</strong> @CurrentRecipe.Yield</p>
+    <h3>Ingredients</h3>
+    <ul style="font-size: 1.1rem; line-height: 1.8;">
+        @foreach (var ingredient in CurrentRecipe.Ingredients)
+        {
+            <li>@ingredient</li>
+        }
+    </ul>
+}
 
-        <h3>Ingredients</h3>
-        <ul style="font-size: 1.1rem; line-height: 1.8;">
-            @foreach (var ingredient in CurrentRecipe.Ingredients)
-            {
-                <li>@ingredient</li>
-            }
-        </ul>
-    }
+@if (!IsLoading && !string.IsNullOrEmpty(RecipeTitle))
+{
+    var backHref = EffectiveSource == "json" ? "/recipesfromjson" :
+                   EffectiveSource == "web" ? "/recipefromwebjson" : "/";
 
-    <NavLink href="@(effectiveSource == "json" ? "/recipesfromjson" : "/")">
-        ← Back to @(effectiveSource == "json" ? "Recipes from JSON" : "Available Recipes")
-    </NavLink>
+    var backText = EffectiveSource == "json" ? "Recipes from JSON" :
+                   EffectiveSource == "web" ? "Recipes from Web API" : "Available Recipes";
+
+    <NavLink href="@backHref">← Back to @backText</NavLink>
 }
 
 @code {
@@ -51,16 +57,40 @@ else
     [SupplyParameterFromQuery(Name = "source")]
     public string? Source { get; set; }
 
-    private Recipe? CurrentRecipe;
+    private string EffectiveSource => Source ?? "inmemory";
+    private string SourceDisplay => EffectiveSource == "json" ? "JSON file" :
+                                    EffectiveSource == "web" ? "web API" : "in-memory";
 
-    protected override void OnInitialized()
+    private Recipe? CurrentRecipe;
+    private bool IsLoading = true;
+
+    protected override async Task OnInitializedAsync()
     {
+        IsLoading = true;
+
         if (!string.IsNullOrEmpty(RecipeTitle))
         {
-            var effectiveSource = Source ?? "inmemory";
-            IRecipeService selectedService = effectiveSource == "json" ? JsonService : InMemoryService;
-
-            CurrentRecipe = selectedService.GetRecipeByTitle(RecipeTitle);
+            if (EffectiveSource == "web")
+            {
+                try
+                {
+                    var json = await Http.GetStringAsync("api/recipes");
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var loaded = JsonSerializer.Deserialize<List<Recipe>>(json, options) ?? new();
+                    CurrentRecipe = loaded.FirstOrDefault(r => r.Title.Equals(RecipeTitle, StringComparison.OrdinalIgnoreCase));
+                }
+                catch
+                {
+                    CurrentRecipe = null;
+                }
+            }
+            else
+            {
+                IRecipeService selectedService = EffectiveSource == "json" ? JsonService : InMemoryService;
+                CurrentRecipe = selectedService.GetRecipeByTitle(RecipeTitle);
+            }
         }
+
+        IsLoading = false;
     }
 }

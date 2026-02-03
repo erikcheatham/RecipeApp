@@ -1,5 +1,6 @@
 using RecipeApp.Components;
 using RecipeApp.Services;
+using Microsoft.AspNetCore.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,15 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddSingleton<RecipeService>();
 builder.Services.AddSingleton<RecipesFromJSONService>();
+
+builder.Services.AddScoped<HttpClient>(sp =>
+{
+    var navigationManager = sp.GetRequiredService<NavigationManager>();
+    return new HttpClient
+    {
+        BaseAddress = new Uri(navigationManager.BaseUri)
+    };
+});
 
 var app = builder.Build();
 
@@ -27,5 +37,18 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapGet("/api/recipes", async (IWebHostEnvironment env) =>
+{
+    var path = Path.Combine(env.ContentRootPath, "Data", "recipes.json");
+
+    if (!File.Exists(path))
+    {
+        return Results.NotFound();
+    }
+
+    var json = await File.ReadAllTextAsync(path);
+    return Results.Text(json, "application/json");
+});
 
 app.Run();
