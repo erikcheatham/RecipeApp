@@ -1,0 +1,27 @@
+﻿@page "/"
+@using System
+@using RecipeApp.Models
+@using RecipeApp.Services
+@inject RecipeService RecipeService
+
+<PageTitle>Recipes</PageTitle>
+
+<h1>Available Recipes</h1>
+
+@if (!RecipeService.GetAllRecipes().Any())
+{
+    <p><em>No recipes available.</em></p>
+}
+else
+{
+    <ul>
+        @foreach (var recipe in RecipeService.GetAllRecipes())
+        {
+            <li>
+                <NavLink href="@($"/recipedetail?title={Uri.EscapeDataString(recipe.Title)}")">
+                    @recipe.Title (serves @recipe.Yield)
+                </NavLink>
+            </li>
+        }
+    </ul>
+}

@@ -1,0 +1,31 @@
+﻿@page "/recipesfromjson"
+@using System
+@using RecipeApp.Models
+@using RecipeApp.Services
+@inject RecipesFromJSONService RecipesFromJSONService
+
+<PageTitle>Recipes from JSON</PageTitle>
+
+<h1>Recipes from JSON</h1>
+
+<p><strong>These recipes are dynamically loaded from Data/recipes.json at app startup.</strong></p>
+
+@if (!RecipesFromJSONService.GetAllRecipes().Any())
+{
+    <p><em>No recipes loaded (check if Data/recipes.json exists and is valid).</em></p>
+}
+else
+{
+    <ul>
+        @foreach (var recipe in RecipesFromJSONService.GetAllRecipes())
+        {
+            <li>
+                <NavLink href="@($"/recipedetail?title={Uri.EscapeDataString(recipe.Title)}")">
+                    @recipe.Title (serves @recipe.Yield)
+                </NavLink>
+            </li>
+        }
+    </ul>
+}
+
+<NavLink href="/recipesfromjson">← Back to Home</NavLink>
