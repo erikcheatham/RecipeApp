@@ -8,11 +8,15 @@
 
 <h1>Recipes from Web API</h1>
 
-<p><strong>These recipes are fetched from the app's own structured /api/recipes endpoint (mocking an external web service).</strong></p>
+<NavLink class="btn btn-primary mb-3" href="/editrecipe?source=web">
+    Add New Recipe
+</NavLink>
+
+<p><strong>These recipes are fetched/saved via the app’s own /api/recipes endpoint.</strong></p>
 
 @if (!WebService.GetAllRecipes().Any())
 {
-    <p><em>No recipes loaded (fetch may have failed).</em></p>
+    <p><em>No recipes available (fetch may have failed).</em></p>
 }
 else
 {
@@ -22,6 +26,9 @@ else
             <li>
                 <NavLink href="@($"/recipedetail?title={Uri.EscapeDataString(recipe.Title)}&source=web")">
                     @recipe.Title (serves @recipe.Yield)
+                </NavLink>
+                <NavLink class="ms-2" href="@($"/editrecipe?title={Uri.EscapeDataString(recipe.Title)}&source=web")">
+                    [Edit]
                 </NavLink>
             </li>
         }

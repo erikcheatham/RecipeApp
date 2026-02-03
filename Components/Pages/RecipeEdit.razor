@@ -1,0 +1,233 @@
+﻿@page "/editrecipe"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using Microsoft.AspNetCore.Components.Web
+@using RecipeApp.Models
+@using RecipeApp.Services
+@inject RecipeService InMemoryService
+@inject RecipesFromJSONService JsonService
+@inject RecipesFromWebService WebService
+@inject NavigationManager Navigation
+
+<PageTitle>@(string.IsNullOrEmpty(OriginalTitle) ? "Add New Recipe" : "Edit Recipe")</PageTitle>
+
+<div class="container-fluid">
+    @if (!loadComplete)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <div class="row mt-2 text-center">
+            <div class="form-group col-sm-2"></div>
+            <div class="form-group col-sm-8"><h1>@(string.IsNullOrEmpty(OriginalTitle) ? "Add New Recipe" : $"Edit {editRecipe.Title}")</h1></div>
+            <div class="form-group col-sm-2"></div>
+        </div>
+        <br />
+        <br />
+
+        <div class="row mt-2">
+            <h3 class="fw-bold">Recipe Information</h3>
+            <hr>
+            <div class="form-group col">
+                <label class="fw-bold" for="RecipeTitle">Title</label>
+                <input class="form-control" id="RecipeTitle" name="RecipeTitle" type="text" @bind-value="@editRecipe.Title" @bind-value:event="oninput" />
+            </div>
+            <div class="form-group col">
+                <label class="fw-bold" for="RecipeYield">Serves</label>
+                <input class="form-control" id="RecipeYield" name="RecipeYield" type="number" min="1" @bind-value="@editRecipe.Yield" @bind-value:event="oninput" />
+            </div>
+        </div>
+
+        <div class="row mt-2">
+            <h3 class="fw-bold">Ingredients</h3>
+            <hr>
+        </div>
+
+        @if (editRecipe.Ingredients.Count == 0)
+        {
+            <div class="row mt-2">
+                <div class="form-group col">
+                    <p><em>No ingredients yet – click "Add Ingredient Line" to start.</em></p>
+                </div>
+            </div>
+        }
+
+        @for (int i = 0; i < editRecipe.Ingredients.Count; i++)
+        {
+            int index = i;
+            string ingredientInputId = $"Ingredient{index}";
+            string removeInputId = $"RemoveIngredient{index}";
+
+            <div class="row mt-2">
+                <div class="form-group col">
+                    <label class="fw-bold" for="@ingredientInputId">Ingredient @(index + 1)</label>
+                    <div class="input-group">
+                        <input class="form-control" id="@ingredientInputId" name="@ingredientInputId" type="text" @bind-value="@editRecipe.Ingredients[index]" @bind-value:event="oninput" />
+                        <button type="button" class="btn btn-outline-danger" id="@removeInputId" @onclick="() => RemoveIngredientLine(index)">Remove</button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="row mt-2">
+            <div class="form-group col">
+                <button type="button" class="btn btn-info text-white fw-bold" @onclick="AddIngredientLine">Add Ingredient Line</button>
+            </div>
+        </div>
+
+        <div class="row mt-2">
+            <div class="form-group col">
+                <label class="text-danger fw-bold fs-5 w-100 float-start">@returnMessage</label>
+            </div>
+            <div class="form-group col">
+                <button type="button" class="form-control fs-5 btn-primary fw-bold w-50 float-end" @onclick="SaveRecipe" disabled="@isSubmitting">Save Changes</button>
+            </div>
+        </div>
+        <br />
+
+        <br />
+
+        <div class="row mt-2">
+            <div class="form-group col"></div>
+            <div class="form-group col">
+                <button type="button" class="form-control fs-5 btn-secondary fw-bold w-50 float-end" @onclick="Cancel">Cancel</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "title")]
+    public string OriginalTitle { get; set; } = string.Empty;
+
+    [SupplyParameterFromQuery(Name = "source")]
+    public string? Source { get; set; }
+
+    private string EffectiveSource => Source ?? "inmemory";
+
+    private IRecipeService SelectedService => EffectiveSource switch
+    {
+        "json" => JsonService,
+        "web" => WebService,
+        _ => InMemoryService
+    };
+
+    private Recipe editRecipe = new() { Ingredients = new List<string>() };
+    private string returnMessage = string.Empty;
+    private bool isSubmitting = false;
+    private bool loadComplete = false;
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(OriginalTitle))
+            {
+                var original = SelectedService.GetRecipeByTitle(OriginalTitle);
+                if (original == null)
+                {
+                    Navigation.NavigateTo(GetBackUrl());
+                    return;
+                }
+
+                editRecipe.Title = original.Title;
+                editRecipe.Yield = original.Yield;
+                editRecipe.Ingredients = new List<string>(original.Ingredients);
+
+                // Ensure at least one line if empty
+                if (editRecipe.Ingredients.Count == 0)
+                {
+                    editRecipe.Ingredients.Add(string.Empty);
+                }
+            }
+            else
+            {
+                // Add mode defaults
+                editRecipe.Yield = 4;
+                editRecipe.Ingredients.Add(string.Empty); // Always start with one blank line
+            }
+        }
+        catch (Exception ex)
+        {
+            returnMessage = $"Failed to load recipe: {ex.Message}";
+        }
+        finally
+        {
+            loadComplete = true;
+        }
+    }
+
+    private void AddIngredientLine()
+    {
+        editRecipe.Ingredients.Add(string.Empty);
+        StateHasChanged();
+    }
+
+    private void RemoveIngredientLine(int index)
+    {
+        if (editRecipe.Ingredients.Count > 1)
+        {
+            editRecipe.Ingredients.RemoveAt(index);
+        }
+        else
+        {
+            editRecipe.Ingredients[index] = string.Empty;
+        }
+        StateHasChanged();
+    }
+
+    private async Task SaveRecipe()
+    {
+        isSubmitting = true;
+        returnMessage = string.Empty;
+        StateHasChanged();
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(editRecipe.Title))
+            {
+                returnMessage = "Title is required.";
+                isSubmitting = false;
+                StateHasChanged();
+                return;
+            }
+
+            // Remove empty ingredients before saving
+            editRecipe.Ingredients = editRecipe.Ingredients
+                .Where(i => !string.IsNullOrWhiteSpace(i))
+                .Select(i => i.Trim())
+                .ToList();
+
+            if (string.IsNullOrEmpty(OriginalTitle))
+            {
+                SelectedService.AddRecipe(editRecipe);
+            }
+            else
+            {
+                SelectedService.UpdateRecipe(OriginalTitle, editRecipe);
+            }
+
+            returnMessage = "Changes Saved!";
+            await Task.Delay(500);
+            Navigation.NavigateTo($"/recipedetail?title={Uri.EscapeDataString(editRecipe.Title)}&source={EffectiveSource}");
+        }
+        catch (Exception ex)
+        {
+            returnMessage = $"Save failed: {ex.Message}";
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo(GetBackUrl());
+    }
+
+    private string GetBackUrl() => EffectiveSource switch
+    {
+        "json" => "/recipesfromjson",
+        "web" => "/recipefromwebjson",
+        _ => "/"
+    };
+}

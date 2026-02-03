@@ -8,11 +8,15 @@
 
 <h1>Recipes from JSON</h1>
 
-<p><strong>These recipes are dynamically loaded from Data/recipes.json at app startup.</strong></p>
+<NavLink class="btn btn-primary mb-3" href="/editrecipe?source=json">
+    Add New Recipe
+</NavLink>
+
+<p><strong>These recipes are loaded/saved directly from/to Data/recipes.json.</strong></p>
 
 @if (!RecipesFromJSONService.GetAllRecipes().Any())
 {
-    <p><em>No recipes loaded (check if Data/recipes.json exists and is valid).</em></p>
+    <p><em>No recipes available.</em></p>
 }
 else
 {
@@ -22,6 +26,9 @@ else
             <li>
                 <NavLink href="@($"/recipedetail?title={Uri.EscapeDataString(recipe.Title)}&source=json")">
                     @recipe.Title (serves @recipe.Yield)
+                </NavLink>
+                <NavLink class="ms-2" href="@($"/editrecipe?title={Uri.EscapeDataString(recipe.Title)}&source=json")">
+                    [Edit]
                 </NavLink>
             </li>
         }

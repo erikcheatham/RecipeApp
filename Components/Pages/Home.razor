@@ -6,7 +6,11 @@
 
 <PageTitle>Recipes</PageTitle>
 
-<h1>Available Recipes</h1>
+<h1>Available Recipes (In-Memory)</h1>
+
+<NavLink class="btn btn-primary mb-3" href="/editrecipe?source=inmemory">
+    Add New Recipe
+</NavLink>
 
 @if (!RecipeService.GetAllRecipes().Any())
 {
@@ -20,6 +24,9 @@ else
             <li>
                 <NavLink href="@($"/recipedetail?title={Uri.EscapeDataString(recipe.Title)}&source=inmemory")">
                     @recipe.Title (serves @recipe.Yield)
+                </NavLink>
+                <NavLink class="ms-2" href="@($"/editrecipe?title={Uri.EscapeDataString(recipe.Title)}&source=inmemory")">
+                    [Edit]
                 </NavLink>
             </li>
         }

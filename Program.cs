@@ -64,4 +64,94 @@ app.MapGet("/api/recipes", async (IWebHostEnvironment env) =>
     return Results.Json(response);
 });
 
+app.MapPost("/api/recipes", async (Recipe recipe, IWebHostEnvironment env) =>
+{
+    var list = await LoadRecipesAsync(env);
+
+    if (list.Any(r => r.Title.Equals(recipe.Title, StringComparison.OrdinalIgnoreCase)))
+    {
+        return Results.Conflict("A recipe with this title already exists.");
+    }
+
+    list.Add(recipe);
+    await SaveRecipesAsync(list, env);
+    return Results.Created("/api/recipes", recipe);
+});
+
+app.MapPut("/api/recipes/{title}", async (string title, Recipe updatedRecipe, IWebHostEnvironment env) =>
+{
+    var list = await LoadRecipesAsync(env);
+    var existing = list.FirstOrDefault(r => r.Title.Equals(title, StringComparison.OrdinalIgnoreCase));
+
+    if (existing == null)
+    {
+        return Results.NotFound();
+    }
+
+    var newTitle = updatedRecipe.Title;
+    if (!newTitle.Equals(title, StringComparison.OrdinalIgnoreCase) &&
+        list.Any(r => r.Title.Equals(newTitle, StringComparison.OrdinalIgnoreCase) && !r.Title.Equals(title, StringComparison.OrdinalIgnoreCase)))
+    {
+        return Results.Conflict("A recipe with the new title already exists.");
+    }
+
+    existing.Title = newTitle;
+    existing.Yield = updatedRecipe.Yield;
+    existing.Ingredients.Clear();
+    existing.Ingredients.AddRange(updatedRecipe.Ingredients);
+
+    await SaveRecipesAsync(list, env);
+    return Results.Ok(existing);
+});
+
+app.MapDelete("/api/recipes/{title}", async (string title, IWebHostEnvironment env) =>
+{
+    var list = await LoadRecipesAsync(env);
+    list.RemoveAll(r => r.Title.Equals(title, StringComparison.OrdinalIgnoreCase));
+
+    await SaveRecipesAsync(list, env);
+    return Results.NoContent(); // Always success – idempotent
+});
+
+// Helper methods
+static async Task<List<Recipe>> LoadRecipesAsync(IWebHostEnvironment env)
+{
+    var path = Path.Combine(env.ContentRootPath, "Data", "recipes.json");
+    if (!File.Exists(path)) return new List<Recipe>();
+
+    var json = await File.ReadAllTextAsync(path);
+    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    return JsonSerializer.Deserialize<List<Recipe>>(json, options) ?? new List<Recipe>();
+}
+
+static async Task SaveRecipesAsync(List<Recipe> recipes, IWebHostEnvironment env)
+{
+    var path = Path.Combine(env.ContentRootPath, "Data", "recipes.json");
+    var options = new JsonSerializerOptions { WriteIndented = true };
+    var json = JsonSerializer.Serialize(recipes, options);
+    await File.WriteAllTextAsync(path, json);
+}
+
+//app.MapGet("/api/recipes", async (IWebHostEnvironment env) =>
+//{
+//    var path = Path.Combine(env.ContentRootPath, "Data", "recipes.json");
+
+//    if (!File.Exists(path))
+//    {
+//        return Results.NotFound();
+//    }
+
+//    var json = await File.ReadAllTextAsync(path);
+//    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+//    var loaded = JsonSerializer.Deserialize<List<Recipe>>(json, options) ?? new();
+
+//    var response = new RecipeListResponse
+//    {
+//        Recipes = loaded,
+//        TotalCount = loaded.Count
+//    };
+
+//    return Results.Json(response);
+//});
+
 app.Run();
