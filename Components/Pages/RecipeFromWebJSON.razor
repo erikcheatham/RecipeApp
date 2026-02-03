@@ -1,27 +1,23 @@
 ﻿@page "/recipefromwebjson"
 @using System
-@using System.Text.Json
 @using RecipeApp.Models
-@inject HttpClient Http
+@using RecipeApp.Services
+@inject RecipesFromWebService WebService
 
 <PageTitle>Recipes from Web API</PageTitle>
 
 <h1>Recipes from Web API</h1>
 
-<p><strong>These recipes are fetched from the app's own /api/recipes endpoint (mocking an external web service).</strong></p>
+<p><strong>These recipes are fetched from the app's own structured /api/recipes endpoint (mocking an external web service).</strong></p>
 
-@if (Recipes == null)
+@if (!WebService.GetAllRecipes().Any())
 {
-    <p><em>Loading...</em></p>
-}
-else if (!Recipes.Any())
-{
-    <p><em>No recipes loaded (fetch failed or empty).</em></p>
+    <p><em>No recipes loaded (fetch may have failed).</em></p>
 }
 else
 {
     <ul>
-        @foreach (var recipe in Recipes)
+        @foreach (var recipe in WebService.GetAllRecipes())
         {
             <li>
                 <NavLink href="@($"/recipedetail?title={Uri.EscapeDataString(recipe.Title)}&source=web")">
@@ -33,21 +29,3 @@ else
 }
 
 <NavLink href="/">← Back to Home</NavLink>
-
-@code {
-    private List<Recipe>? Recipes;
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            var json = await Http.GetStringAsync("api/recipes");
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            Recipes = JsonSerializer.Deserialize<List<Recipe>>(json, options) ?? new();
-        }
-        catch
-        {
-            Recipes = new();
-        }
-    }
-}

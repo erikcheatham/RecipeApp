@@ -1,11 +1,10 @@
 ﻿@page "/recipedetail"
 @using System
-@using System.Text.Json
 @using RecipeApp.Models
 @using RecipeApp.Services
 @inject RecipeService InMemoryService
 @inject RecipesFromJSONService JsonService
-@inject HttpClient Http
+@inject RecipesFromWebService WebService
 
 <PageTitle>@(CurrentRecipe?.Title ?? "Recipe Details")</PageTitle>
 
@@ -15,37 +14,48 @@
 {
     <p><em>No recipe selected.</em></p>
 }
-else if (IsLoading)
-{
-    <p><em>Loading recipe...</em></p>
-}
-else if (CurrentRecipe == null)
-{
-    <p><em>Recipe "@RecipeTitle" not found in the @SourceDisplay data source.</em></p>
-}
 else
 {
-    <p><em>Loaded from @SourceDisplay data.</em></p>
+    var effectiveSource = Source ?? "inmemory";
+    IRecipeService selectedService = effectiveSource switch
+    {
+        "json" => JsonService,
+        "web" => WebService,
+        _ => InMemoryService
+    };
 
-    <h2>@CurrentRecipe.Title</h2>
-    <p><strong>Serves:</strong> @CurrentRecipe.Yield</p>
+    var sourceDisplay = effectiveSource switch
+    {
+        "json" => "JSON file",
+        "web" => "web API",
+        _ => "in-memory"
+    };
 
-    <h3>Ingredients</h3>
-    <ul style="font-size: 1.1rem; line-height: 1.8;">
-        @foreach (var ingredient in CurrentRecipe.Ingredients)
-        {
-            <li>@ingredient</li>
-        }
-    </ul>
-}
+    if (CurrentRecipe == null)
+    {
+        <p><em>Recipe "@RecipeTitle" not found in the @sourceDisplay data source.</em></p>
+    }
+    else
+    {
+        <p><em>Loaded from @sourceDisplay data.</em></p>
 
-@if (!IsLoading && !string.IsNullOrEmpty(RecipeTitle))
-{
-    var backHref = EffectiveSource == "json" ? "/recipesfromjson" :
-                   EffectiveSource == "web" ? "/recipefromwebjson" : "/";
+        <h2>@CurrentRecipe.Title</h2>
+        <p><strong>Serves:</strong> @CurrentRecipe.Yield</p>
 
-    var backText = EffectiveSource == "json" ? "Recipes from JSON" :
-                   EffectiveSource == "web" ? "Recipes from Web API" : "Available Recipes";
+        <h3>Ingredients</h3>
+        <ul style="font-size: 1.1rem; line-height: 1.8;">
+            @foreach (var ingredient in CurrentRecipe.Ingredients)
+            {
+                <li>@ingredient</li>
+            }
+        </ul>
+    }
+
+    var backHref = effectiveSource == "json" ? "/recipesfromjson" :
+                   effectiveSource == "web" ? "/recipefromwebjson" : "/";
+
+    var backText = effectiveSource == "json" ? "Recipes from JSON" :
+                   effectiveSource == "web" ? "Recipes from Web API" : "Available Recipes";
 
     <NavLink href="@backHref">← Back to @backText</NavLink>
 }
@@ -57,40 +67,21 @@ else
     [SupplyParameterFromQuery(Name = "source")]
     public string? Source { get; set; }
 
-    private string EffectiveSource => Source ?? "inmemory";
-    private string SourceDisplay => EffectiveSource == "json" ? "JSON file" :
-                                    EffectiveSource == "web" ? "web API" : "in-memory";
-
     private Recipe? CurrentRecipe;
-    private bool IsLoading = true;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        IsLoading = true;
-
         if (!string.IsNullOrEmpty(RecipeTitle))
         {
-            if (EffectiveSource == "web")
+            var effectiveSource = Source ?? "inmemory";
+            IRecipeService selectedService = effectiveSource switch
             {
-                try
-                {
-                    var json = await Http.GetStringAsync("api/recipes");
-                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                    var loaded = JsonSerializer.Deserialize<List<Recipe>>(json, options) ?? new();
-                    CurrentRecipe = loaded.FirstOrDefault(r => r.Title.Equals(RecipeTitle, StringComparison.OrdinalIgnoreCase));
-                }
-                catch
-                {
-                    CurrentRecipe = null;
-                }
-            }
-            else
-            {
-                IRecipeService selectedService = EffectiveSource == "json" ? JsonService : InMemoryService;
-                CurrentRecipe = selectedService.GetRecipeByTitle(RecipeTitle);
-            }
-        }
+                "json" => JsonService,
+                "web" => WebService,
+                _ => InMemoryService
+            };
 
-        IsLoading = false;
+            CurrentRecipe = selectedService.GetRecipeByTitle(RecipeTitle);
+        }
     }
 }

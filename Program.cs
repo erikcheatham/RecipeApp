@@ -1,6 +1,8 @@
-using RecipeApp.Components;
-using RecipeApp.Services;
 using Microsoft.AspNetCore.Components;
+using RecipeApp.Components;
+using RecipeApp.Models;
+using RecipeApp.Services;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +21,8 @@ builder.Services.AddScoped<HttpClient>(sp =>
         BaseAddress = new Uri(navigationManager.BaseUri)
     };
 });
+
+builder.Services.AddScoped<RecipesFromWebService>();
 
 var app = builder.Build();
 
@@ -48,7 +52,16 @@ app.MapGet("/api/recipes", async (IWebHostEnvironment env) =>
     }
 
     var json = await File.ReadAllTextAsync(path);
-    return Results.Text(json, "application/json");
+    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    var loaded = JsonSerializer.Deserialize<List<Recipe>>(json, options) ?? new();
+
+    var response = new RecipeListResponse
+    {
+        Recipes = loaded,
+        TotalCount = loaded.Count
+    };
+
+    return Results.Json(response);
 });
 
 app.Run();
