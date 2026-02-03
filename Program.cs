@@ -107,15 +107,10 @@ app.MapPut("/api/recipes/{title}", async (string title, Recipe updatedRecipe, IW
 app.MapDelete("/api/recipes/{title}", async (string title, IWebHostEnvironment env) =>
 {
     var list = await LoadRecipesAsync(env);
-    var removed = list.RemoveAll(r => r.Title.Equals(title, StringComparison.OrdinalIgnoreCase));
-
-    if (removed == 0)
-    {
-        return Results.NotFound();
-    }
+    list.RemoveAll(r => r.Title.Equals(title, StringComparison.OrdinalIgnoreCase));
 
     await SaveRecipesAsync(list, env);
-    return Results.NoContent();
+    return Results.NoContent(); // Always success – idempotent
 });
 
 // Helper methods
