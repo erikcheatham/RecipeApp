@@ -11,7 +11,8 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddSingleton<RecipeService>();
-builder.Services.AddSingleton<RecipesFromJSONService>();
+builder.Services.AddSingleton<RecipesFromJSONService>(); 
+builder.Services.AddSingleton<NutritionService>();
 
 builder.Services.AddScoped<HttpClient>(sp =>
 {

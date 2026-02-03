@@ -12,4 +12,7 @@ public class Recipe
     public int Yield { get; set; }
 
     public List<string> Ingredients { get; set; } = new();
+    public NutritionProfile? TotalNutrition { get; set; }
+    public NutritionProfile? PerServingNutrition { get; set; }
+    public List<FoodMatch>? IngredientMatches { get; set; }
 }

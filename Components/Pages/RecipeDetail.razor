@@ -8,6 +8,7 @@
 @inject RecipesFromJSONService JsonService
 @inject RecipesFromWebService WebService
 @inject NavigationManager Navigation
+@inject NutritionService NutritionService
 
 <PageTitle>@(CurrentRecipe?.Title ?? "Recipe Details")</PageTitle>
 
@@ -41,14 +42,39 @@ else
     }
     else
     {
+        NutritionService.ComputeNutrition(CurrentRecipe);
+
         <p><em>Loaded from @sourceDisplay data.</em></p>
 
-        <h2>@CurrentRecipe.Title</h2>
-        <p><strong>Serves:</strong> @CurrentRecipe.Yield</p>
+        @if (CurrentRecipe?.TotalNutrition != null)
+        {
+            <h3>Nutritional Profile (Total / Per Serving)</h3>
+            <ul>
+                <li>Calories: @CurrentRecipe.TotalNutrition.Calories (@CurrentRecipe.PerServingNutrition?.Calories)</li>
+                <li>Protein: @CurrentRecipe.TotalNutrition.Protein g (@CurrentRecipe.PerServingNutrition?.Protein g)</li>
+                <li>Carbs: @CurrentRecipe.TotalNutrition.Carbs g (@CurrentRecipe.PerServingNutrition?.Carbs g)</li>
+                <li>Fat: @CurrentRecipe.TotalNutrition.Fat g (@CurrentRecipe.PerServingNutrition?.Fat g)</li>
+            </ul>
+
+            @if (CurrentRecipe.IngredientMatches?.Any() == true)
+            {
+                <h4>Ingredient Matches</h4>
+                <ul>
+                    @foreach (var match in CurrentRecipe.IngredientMatches)
+                    {
+                        <li>@match.Description (score: @match.MatchScore)</li>
+                    }
+                </ul>
+            }
+        }
+
+
+        <h2>@CurrentRecipe?.Title</h2>
+        <p><strong>Serves:</strong> @CurrentRecipe?.Yield</p>
 
         <h3>Ingredients</h3>
         <ul style="font-size: 1.1rem; line-height: 1.8;">
-            @foreach (var ingredient in CurrentRecipe.Ingredients)
+            @foreach (var ingredient in CurrentRecipe?.Ingredients ?? new List<string>())
             {
                 <li>@ingredient</li>
             }
@@ -56,7 +82,7 @@ else
 
         <div class="mt-3">
             <NavLink class="btn btn-outline-primary me-2"
-                     href="@($"/editrecipe?title={Uri.EscapeDataString(CurrentRecipe.Title)}&source={effectiveSource}")">
+                     href="@($"/editrecipe?title={Uri.EscapeDataString(CurrentRecipe?.Title ?? "")}&source={effectiveSource}")">
                 Edit Recipe
             </NavLink>
             <button type="button" class="btn btn-outline-danger" @onclick="DeleteRecipe">Delete Recipe</button>

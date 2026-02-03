@@ -13,4 +13,15 @@
 		</None>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <PackageReference Include="CsvHelper" Version="33.1.0" />
+	  <PackageReference Include="FuzzySharp" Version="2.0.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Data\macro.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
 </Project>

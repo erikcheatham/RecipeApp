@@ -21,3 +21,22 @@ ingredient lists of my user entered receipes may match entire recipes or may mat
 if (Title.Contains(description))
 if (Ingredients.Foreach(x => x.Contains(description))
 if ()
+
+Second converstaion with Grok - https://grok.com/share/bGVnYWN5_0b542245-8bd2-43fc-9ef1-56cc7278a846
+
+Implement embeddings with Grok:
+
+	First prompted Grok to help me understand embeddings:
+		Explain how I could use embeddings, semantic or synaptic with pattern matching in this dataset? 
+			Here is a sample of the dataset I provided:	
+				fdc_id,description,calories,proteinInGrams,carbohydratesInGrams,fatInGrams
+				1104647,"Garlic, raw",144.3302574431088,6.56235551079862,29.277508528918112,0.4066051488621757
+				1104705,"Flour, soy, defatted",366.0,51.1,32.9,3.33
+				1104766,"Flour, soy, full-fat",452.0,38.6,27.9,20.7
+
+
+	Added new dataset and all project files to Grok and used the following prompts:
+		Okay show me how to incorporate this into my project now, first if I were to use an AI service, actually help me do this with you first. 
+		I have attached both data files to this project now and all the code in the project. 
+		I want to create a nutritional profile for my recipes using the macro.csv dataset, which you will need to help me parse into memory or maybe not, 
+		how can I set up an endpoint with you Grok to send the data file in and u can give me back embeddings to properly rank my ingredient or recipe matches?
