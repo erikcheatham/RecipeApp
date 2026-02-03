@@ -42,8 +42,6 @@ else
     }
     else
     {
-        NutritionService.ComputeNutrition(CurrentRecipe);
-
         <p><em>Loaded from @sourceDisplay data.</em></p>
 
         @if (CurrentRecipe?.TotalNutrition != null)
@@ -107,7 +105,7 @@ else
 
     private Recipe? CurrentRecipe;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         if (!string.IsNullOrEmpty(RecipeTitle))
         {
@@ -121,6 +119,8 @@ else
 
             CurrentRecipe = selectedService.GetRecipeByTitle(RecipeTitle);
         }
+
+        await NutritionService.ComputeNutritionAsync(CurrentRecipe!);
     }
 
     private void DeleteRecipe()
