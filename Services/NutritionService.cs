@@ -1,10 +1,12 @@
-﻿using CsvHelper;
+﻿using RecipeApp.Models;
+using CsvHelper;
 using CsvHelper.Configuration;
-using RecipeApp.Models;
 using System.Globalization;
-using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using FuzzySharp;
+using System.Collections.Concurrent;
 
 namespace RecipeApp.Services;
 
@@ -20,15 +22,9 @@ public class FoodRecord
 public class NutritionService
 {
     private readonly List<FoodRecord> _foods = new();
-    private readonly HttpClient _http = new();
-    private readonly Dictionary<string, float[]> _embeddingCache = new(); // Cache for performance
+    private readonly HttpClient _http = new() { BaseAddress = new Uri("http://localhost:11434/api/") };
+    private readonly ConcurrentDictionary<string, float[]> _embeddingCache = new();
     private readonly Regex _quantityRegex = new(@"^(\d+(\.\d+)?)\s*g\s*(.+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-    // Replace with your actual xAI API key (store securely, e.g., in appsettings or user secrets)
-    private const string ApiKey = "api-key";
-
-    // Current xAI embeddings model (check https://x.ai/api for latest – as of 2025, often "grok-embedding" or similar)
-    private const string EmbeddingModel = "grok-4";
 
     public NutritionService(IWebHostEnvironment env)
     {
@@ -49,7 +45,7 @@ public class NutritionService
 
         while (csv.Read())
         {
-            var desc = csv.GetField("description")?.Trim().ToLower() ?? "";
+            var desc = csv.GetField("description")?.Trim() ?? "";
             if (string.IsNullOrEmpty(desc)) continue;
 
             double.TryParse(csv.GetField("calories"), out var cal);
@@ -59,18 +55,13 @@ public class NutritionService
 
             _foods.Add(new FoodRecord
             {
-                Description = desc,
+                Description = desc.ToLower(),
                 Calories = cal,
                 Protein = pro,
                 Carbs = carb,
                 Fat = fat
             });
         }
-
-        _http.BaseAddress = new Uri("https://api.x.ai/v1/");
-        _http.DefaultRequestHeaders.Clear(); // Safety
-        _http.DefaultRequestHeaders.Add("x-api-key", ApiKey);
-        _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
     }
 
     public async Task ComputeNutritionAsync(Recipe recipe)
@@ -106,20 +97,88 @@ public class NutritionService
 
         var name = m.Groups[3].Value.Trim().ToLower();
 
-        // Get embedding for query
-        var queryEmb = await GetEmbeddingAsync(name);
+        // Step 1: Fuzzy pre-filter to top 50 candidates (fast, no Ollama calls)
+        var candidates = _foods
+            .Select(f => new
+            {
+                Food = f,
+                Score = Fuzz.TokenSetRatio(name, f.Description)
+            })
+            .OrderByDescending(x => x.Score)
+            .Take(50)
+            .Select(x => x.Food)
+            .ToList();
 
-        // Compute similarities (async for cache)
-        var matches = await Task.WhenAll(_foods.Select(async f => new
+        if (candidates.Count == 0) return null;
+
+        float[] queryEmb;
+        try
+        {
+            queryEmb = await GetOllamaEmbeddingAsync($"search_query: {name}");
+        }
+        catch
+        {
+            return FuzzyMatchIngredient(name, quantity);
+        }
+
+        // Step 2: Embed only the 50 candidates (few calls)
+        var foodEmbeddings = await Task.WhenAll(candidates.Select(async f => new
         {
             Food = f,
-            Score = CosineSimilarity(queryEmb, await GetEmbeddingAsync(f.Description))
+            Embedding = await GetOllamaEmbeddingAsync($"search_document: {f.Description}")
         }));
 
-        var best = matches
-            .Where(x => x.Score >= 0.75) // Semantic threshold (higher than fuzzy)
+        var best = foodEmbeddings
+            .Select(x => new
+            {
+                x.Food,
+                Score = CosineSimilarity(queryEmb, x.Embedding)
+            })
             .OrderByDescending(x => x.Score)
-            .FirstOrDefault();
+            .FirstOrDefault(x => x.Score >= 0.7);
+
+        if (best == null) return FuzzyMatchIngredient(name, quantity);
+
+        var scale = quantity / 100.0;
+
+        return new FoodMatch
+        {
+            Description = best.Food.Description,
+            MatchScore = (int)(best.Score * 100),
+            Calories = best.Food.Calories * scale,
+            Protein = best.Food.Protein * scale,
+            Carbs = best.Food.Carbs * scale,
+            Fat = best.Food.Fat * scale
+        };
+    }
+
+    private async Task<float[]> GetOllamaEmbeddingAsync(string text)
+    {
+        if (_embeddingCache.TryGetValue(text, out var cached)) return cached;
+
+        var payload = new { model = "nomic-embed-text", input = text };
+        var response = await _http.PostAsJsonAsync("embeddings", payload);
+        response.EnsureSuccessStatusCode();
+
+        var json = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var vector = json!.RootElement
+            .GetProperty("embedding")
+            .Deserialize<float[]>()!;
+
+        _embeddingCache[text] = vector;
+        return vector;
+    }
+
+    private FoodMatch? FuzzyMatchIngredient(string name, double quantity)
+    {
+        var best = _foods
+            .Select(f => new
+            {
+                Food = f,
+                Score = Fuzz.TokenSetRatio(name, f.Description)
+            })
+            .OrderByDescending(x => x.Score)
+            .FirstOrDefault(x => x.Score >= 70);
 
         if (best == null) return null;
 
@@ -128,39 +187,12 @@ public class NutritionService
         return new FoodMatch
         {
             Description = best.Food.Description,
-            MatchScore = (int)(best.Score * 100), // Convert to 0-100
+            MatchScore = best.Score,
             Calories = best.Food.Calories * scale,
             Protein = best.Food.Protein * scale,
             Carbs = best.Food.Carbs * scale,
             Fat = best.Food.Fat * scale
         };
-    }
-
-    private async Task<float[]> GetEmbeddingAsync(string text)
-    {
-        if (_embeddingCache.TryGetValue(text, out var cached)) return cached;
-
-        var payload = new
-        {
-            model = EmbeddingModel,
-            input = text
-        };
-
-        var response = await _http.PostAsJsonAsync("embeddings", payload);
-        if (!response.IsSuccessStatusCode)
-        {
-            // Fallback or error handling
-            throw new Exception($"Embedding API error: {await response.Content.ReadAsStringAsync()}");
-        }
-
-        var json = await response.Content.ReadFromJsonAsync<JsonDocument>();
-        var vector = json!.RootElement
-            .GetProperty("data")[0]
-            .GetProperty("embedding")
-            .Deserialize<float[]>()!;
-
-        _embeddingCache[text] = vector;
-        return vector;
     }
 
     private static float CosineSimilarity(float[] a, float[] b)

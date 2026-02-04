@@ -5,7 +5,21 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+	  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	  <SelfContained>false</SelfContained>
+	  <!-- Or true for standalone -->
   </PropertyGroup>
+
+	<ItemGroup>
+		<None Include="model\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Remove="model\config.json" />
+	  <Content Remove="model\tokenizer.json" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<None Include="Data\recipes.json">
@@ -14,14 +28,22 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="CsvHelper" Version="33.1.0" />
-	  <PackageReference Include="FuzzySharp" Version="2.0.2" />
+		<None Update="Data\macro.csv">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="model\model.onnx">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="model\vocab.txt">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="Data\macro.csv">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+	  <PackageReference Include="AllMiniLmL6V2Sharp" Version="0.0.3" />
+	  <PackageReference Include="CsvHelper" Version="33.1.0" />
+	  <PackageReference Include="FuzzySharp" Version="2.0.2" />
+	  <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.17.1" />
 	</ItemGroup>
 
 </Project>
