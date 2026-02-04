@@ -11,17 +11,6 @@
   </PropertyGroup>
 
 	<ItemGroup>
-		<None Include="model\**\*">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Content Remove="model\config.json" />
-	  <Content Remove="model\tokenizer.json" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<None Include="Data\recipes.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
@@ -30,12 +19,6 @@
 	<ItemGroup>
 		<None Update="Data\macro.csv">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="model\model.onnx">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="model\vocab.txt">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
 
